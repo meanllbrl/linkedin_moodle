@@ -1,420 +1,61 @@
-
-</style></head><body><article id="71532f08-be91-4c5b-a334-e7364e0dc013" class="page sans"><header><h1 class="page-title"></h1></header><div class="page-body"><h3 id="eb6c9e80-d540-479f-a6cc-5434a3bef4ab" class="">TRIGGERS</h3><p id="9ca4dcc7-d75f-4499-b345-51f552454752" class="">
-</p><p id="601c5bdd-d6d0-4148-8404-66cad4d52976" class=""> The CONNECT_CONSTRAINT trigger is for disabling two users to connect for two times.</p><pre id="cb9a18c3-fdca-4463-9de7-b93acfb18feb" class="code"><code>/*#bir kullanıcının bağlandığı kişi ile tekrar bağlanamamalı*/
-/*(a,b) mevcutsa (b,a) mevcut olmamalı*/
-DELIMITER $$
-CREATE TRIGGER CONNECT_CONSTRAINT
-BEFORE INSE
-        ON CONNECT
-            FOR EACH ROW
-                BEGIN
-                    IF EXISTS(
-                                SELECT * 
-                                FROM CONNECT as A 
-                                WHERE CONCAT(A.User_ssn,A.Connected_ssn) = CONCAT(NEW.Connected_ssn,NEW.User_ssn))
-                            THEN SIGNAL SQLSTATE '45000'
-                                    SET MESSAGE_TEXT = 'They are already connected';
-                    END IF;                 
-                END;
-$$</code></pre><p id="ece9938b-7071-4ed6-afde-a1268e47f754" class="">
-</p><p id="0e998424-0de5-4ad5-bf75-105c5606f044" class="">The ORGANIZATION_ADMIN_INSERT trigger is for automatically updating WORKS_FOR_ORG table with organization admin.</p><pre id="2d4b65d5-3efe-4d7d-8efb-b6ee802076f6" class="code"><code>DELIMITER $$
-/*Eğer bir user bir organizasyonun admini ise orda zaten çalışıyor olmalıdır*/
-CREATE TRIGGER ORGANIZATION_ADMIN_INSERT
-AFTER INSERT 
-             ON ORGANIZATION
-                    FOR EACH ROW
-                        BEGIN
-                            IF NOT EXISTS(
-                                            SELECT * 
-                                            FROM WORKS_FOR_ORG 
-                                            WHERE NEW.Admin_ssn = WORKS_FOR_ORG.User_ssn and WORKS_FOR_ORG.Org_id = NEW.Id )
-                                THEN INSERT INTO WORKS_FOR_ORG(User_ssn,Org_id)
-                                        VALUES (NEW.Admin_ssn,NEW.Id);
-                            END IF;
-                        END;
-$$</code></pre><p id="465f880b-a355-43b1-a2c4-8da2a50c2b2f" class="">
-</p><p id="fe911523-4bca-4d31-b64b-e90e109d963c" class="">The triggers will be activated when user and organization tables have some insertion. Finally, the ACCOUNT table will be updated with the triggers.</p><pre id="397efd53-0a3d-4ae5-88d9-5b9652550ec1" class="code"><code>DEMLIMITTER $$
-CREATE TRIGGER USER_ACCOUNT_INSERTION
-BEFORE INSERT 
-        ON USER 
-FOR EACH ROW
-            BEGIN
-                INSERT INTO ACCOUNT(Account_id)
-                VALUES (NEW.Ssn);
-            END;
-$$
-
-CREATE TRIGGER ORG_ACCOUNT_INSERTION
-BEFORE INSERT 
-        ON ORGANIZATION 
-FOR EACH ROW
-            BEGIN
-                INSERT INTO ACCOUNT(Account_id)
-                VALUES (NEW.Id);
-            END;
-$$
-</code></pre><p id="a0ff6335-cdce-4ecf-b65e-4bd0fcb081fc" class="">
-</p><p id="80996715-2a96-4572-b623-6830c4c7c126" class="">The NOPERMISSION_ASG_UPLOAD is for disabling to users who are not enrolled to a specific course which is assignment upload for. </p><pre id="2cb8ab3e-afd3-4256-9e24-c653601889b9" class="code"><code>DELIMITER $$
-
-CREATE TRIGGER NOPERMISSION_ASG_UPLOAD
-BEFORE INSERT
-        ON ASSIGNMENT_UPLOAD
-            FOR EACH ROW
-                BEGIN
-                    IF NOT EXISTS(
-                        SELECT *
-                        FROM ASSIGNMENT AS ASG  , ENROLLS AS ENR
-                        WHERE NEW.Assignment_id = ASG.Assignment_id 
-                                        AND  ASG.Course_id = ENR.Course_id
-                                                AND NEW.Student_ssn = ENR.Student_ssn)
-                        THEN SIGNAL SQLSTATE '45000'
-                                    SET MESSAGE_TEXT = 'No permission to the user. Not enrolled to the course!';
-                    END IF;
-                END;
-$$</code></pre><p id="1268f041-fcd6-405f-940c-0184fd77df62" class="">
-</p><p id="020079b3-65dd-4e12-9585-e939b2c09e10" class="">The triggers will be activated when POST,COMMENT and ANSWER tables have some insertion. Finally, the LIKABLE_CONTENT table will be updated with the triggers.</p><pre id="191dbdaa-629d-4173-9622-55d32f422f80" class="code"><code>CREATE TRIGGER LIKABLE_POST_INSERTION
-BEFORE INSERT 
-        ON POST 
-FOR EACH ROW
-            BEGIN
-                INSERT INTO LIKABLE_CONTENT(Id)
-                VALUES (NEW.Likable_content_id);
-            END;
-$$     
-
-CREATE TRIGGER LIKABLE_COMMENT_INSERTION
-BEFORE INSERT 
-        ON COMMENT 
-FOR EACH ROW
-            BEGIN
-                INSERT INTO LIKABLE_CONTENT(Id)
-                VALUES (NEW.Likable_content_id);
-            END;
-$$  
-
-CREATE TRIGGER LIKABLE_ANSWER_INSERTION
-BEFORE INSERT 
-        ON ANSWER 
-FOR EACH ROW
-            BEGIN
-                INSERT INTO LIKABLE_CONTENT(Id)
-                VALUES (NEW.Likable_content_id);
-            END;
-$$</code></pre><p id="2558f3bf-e764-4e43-a47c-f6a72ec4b1cc" class="">
-</p><h3 id="00cb635f-7be2-4201-b79b-c68782a57618" class="">CONSTRAINTS-ASSERTIONS</h3><p id="4c8dc2c3-76da-4f4c-b59a-d8ce7faf316a" class="">
-</p><p id="beb74b35-6c69-442e-9b33-b2fc83992cba" class="">The SLFCNCTN constraint is for disabling self connection on system.</p><pre id="20ac3ad5-49e0-4992-90bb-b0d72b70dc82" class="code"><code>CREATE TABLE CONNECT(
-    User_ssn CHAR(9) NOT NULL,
-    Connected_ssn CHAR(9) NOT NULL,
-    CONSTRAINT SLFCNCTN CHECK (User_ssn != Connected_ssn),
-    **
-);</code></pre><p id="0e4990f1-986f-4442-8c1a-a1b71ebef28c" class="">
-</p><p id="05e204f8-df00-40b5-9fb5-1aaf8942daba" class="">The CheckEndLaterThanStart constraint is for checking if start and end dates is valid.</p><pre id="7d94aa1e-6e77-4232-8c4e-fcaf20fea612" class="code"><code>CREATE TABLE PROJECT(
-    **
-    Start_date TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    End_date TIMESTAMP NULL DEFAULT NULL,
-    CONSTRAINT CheckEndLaterThanStart CHECK (End_date=NULL OR End_date &gt;= Start_date),
-	  **
-);</code></pre><p id="5d522adf-78cb-45b2-b2fa-bd72c62982b9" class="">
-</p><p id="1a5e85f3-b742-4d93-930c-156a2c58bda0" class="">The GRADECONSTRAINT constraint is for checking if grade value is valid.</p><pre id="12fdac8a-4bde-4c4d-888e-06a9e3726bf7" class="code"><code>CREATE TABLE ASSIGNMENT_GRADE(
-    **
-    Grade INTEGER NOT NULL DEFAULT 0,
-    CONSTRAINT GRADECONSTRAINT CHECK(Grade&gt;=0 and Grade&lt;=100),
-    **
-);</code></pre><p id="40ed9060-0993-47f3-b32b-827fa80dcffa" class="">
-</p><p id="71871713-5e72-45a1-b9fc-ab4b80696ffc" class="">The NOBADCOMMENT constraint is for disabling swear words to use.</p><pre id="bfae1fdb-3773-482b-bc70-642c1d67afdb" class="code"><code>CREATE TABLE COMMENT(
-    **
-    Body VARCHAR(255) DEFAULT "Comment_body",
-    CONSTRAINT NOBADCOMMENT CHECK(Body NOT LIKE "%fuck%"),
-    **
-);</code></pre><p id="81ba46a6-4a40-482f-a4c7-1adc45a5b0cf" class="">
-</p><p id="fb8e3487-154f-447c-9043-3148b52fce43" class="">The BADCHARS constraint is for disabling unwanted chars to be used!</p><pre id="630033af-2936-4ee3-aa41-efafd09f5a99" class="code"><code>CREATE TABLE USER(
-        ***
-        name VARCHAR(100) NOT NULL,
-        CONSTRAINT BADCHARS CHECK(name LIKE "%*%" 
-																							OR name LIKE "%-%" 
-																										OR name LIKE "%+%" 
-																															OR name LIKE "%~%")
-        *** 
-    );</code></pre><p id="73074fa4-0ed0-45f4-b156-199e3a59b489" class="">
-</p><p id="52295cdf-842f-400a-8712-88d3ace41164" class="">The CONNECT_CONSTRAINT is for disabling repeated connections to occur.</p><pre id="1be3ff9b-e4f7-484b-a834-5e2294e621e5" class="code"><code>DELIMITER $$
-CREATE TRIGGER CONNECT_CONSTRAINT
-BEFORE INSERT
-        ON CONNECT
-            FOR EACH ROW
-                BEGIN
-                    IF EXISTS(
-                                SELECT *
-                                FROM CONNECT as A
-                                WHERE CONCAT(A.User_ssn,A.Connected_ssn) = CONCAT(NEW.Connected_ssn,NEW.User_ssn))
-                            THEN SIGNAL SQLSTATE '45000'
-                                    SET MESSAGE_TEXT = 'They are already connected';
-                    END IF;
-                END;
-$$</code></pre><h3 id="ce42c223-643f-4139-b878-3534a43672a0" class="">SQL STATEMENTS</h3><ol type="1" id="aaed9f4e-46c4-4991-b29a-fa644976938e" class="numbered-list" start="1"><li>INSERTIONS-DELETIONS-UPDATES<ol type="a" id="5b135d27-573d-475d-b20a-15162b74e279" class="numbered-list" start="1"><li>INSERTIONS<ol type="i" id="cea94753-9992-4e84-bc77-98721b93519e" class="numbered-list" start="1"><li>TABLE USER<pre id="41543026-2d37-4157-8ace-84eac3576841" class="code"><code>INSERT INTO USER (Ssn,title,name,last_logged)
-VALUES
-  (500000010,"Student","Nissim Deleon","2021-11-22"),
-  (500000011,"Data Scientist","Avram Golden","2021-11-22"),
-  (500000012,"Teacher","Nayda Rios","2021-11-22"),
-  (500000013,"Entrepreneur","Harding Wooten","2021-11-22"),
-  (500000014,"Member","Whoopi Lindsay","2021-11-22"),
-  (500000015,"Manager","Grant Poole","2021-11-22"),
-  (500000016,"Entrepreneur","Stuart Everett","2021-11-22"),
-  (500000017,"Doctor","Garrett Rowland","2021-11-22"),
-  (500000018,"Prof","Alfreda Reeves","2021-11-22"),
-  (500000019,"Entrepreneur","Meredith Cotton","2021-11-22");</code></pre></li></ol><p id="78af1cfa-73f1-416a-919f-4079f070cd5b" class="">  b. TABLE CONNECT</p><div class="indented"><pre id="6f55a631-f5fb-4ac6-b60a-6c7e8f1ab6d7" class="code"><code>INSERT INTO CONNECT (User_ssn,Connected_ssn)
-VALUES
-  (500000010,500000011),
-  (500000010,500000012),
-  (500000010,500000013),
-  (500000010,500000014),
-  (500000010,500000015),
-  (500000015,500000016),
-  (500000018,500000017),
-  (500000005,500000018),
-  (500000013,500000012),
-  (500000018,500000019);</code></pre></div><p></p><p id="c23c1487-d016-4a3d-9cd4-01a1303dd841" class="">  c. TABLE POST</p><div class="indented"><pre id="365a506f-73fe-4885-9472-fca3bfb0ed39" class="code"><code>INSERT INTO POST(Id,Account_id,Content,Likable_content_id )
-VALUES
-  (31,500000069,"The system is all about memorization!",900000031),
-  (32,500000071,"Engineering harder than anybody think",900000032),
-  (33,500000073,"Harder you work luckier you get!",900000033),
-  (34,500000075,"It's all about consistency!",900000034),
-  (35,500000077,"Life is too short.İf you don't look around sometimes you could miss it.",900000035),
-  (37,500000081,"With great power comes great responsibility",900000037);
-  </code></pre></div><p></p></li></ol><p id="44263161-cb0a-44d6-a03f-08f0381998d1" class="">
-</p><p id="6cf67f41-950e-4572-921a-2532d8384754" class="">b. DELETIONS</p><div class="indented"><ol type="a" id="e52be257-cc43-4ba4-bd1b-049c1e769186" class="numbered-list" start="1"><li>TABLE USER<pre id="f6483add-2199-49b0-b76b-781950ca4b3c" class="code"><code>DELETE FROM USER
-WHERE Ssn=500000010;</code></pre></li></ol><ol type="a" id="09bf42b3-3b93-4955-a2fc-b109e9c725a0" class="numbered-list" start="2"><li>TABLE CONNECT<pre id="22526368-1e4b-4684-8b03-53507343df7b" class="code"><code>DELETE FROM CONNECT
-WHERE  user_ssn = 500000010
-       AND connected_ssn = 500000011;</code></pre></li></ol><ol type="a" id="2f935de6-9c15-46ca-9921-8be2c4f4648f" class="numbered-list" start="3"><li>TABLE POST<pre id="d9d44713-a54f-4055-920b-5a5ae59a80d3" class="code"><code>DELETE FROM POST
-WHERE Content LIKE '%fuck%';</code></pre></li></ol><p id="63b08509-7e0f-42a0-aa4a-9e42ac7b8748" class="">
-</p></div><p></p><p id="f7c4ad9f-2b15-42cb-b883-ca01e7b4f164" class="">c. UPDATES</p><div class="indented"><ol type="a" id="bfad71f2-cebd-4127-8f39-77cea448dcad" class="numbered-list" start="1"><li>TABLE ASSIGNMENT_GRADE<pre id="2fb80993-9711-4302-a0c9-5c497b8974a1" class="code"><code>UPDATE ASSIGNMENT_GRADE
-SET Grade = 90
-WHERE Student_ssn =500000086;</code></pre></li></ol><ol type="a" id="9e55ace5-f56c-4ef0-bf2e-4dc713c62ddc" class="numbered-list" start="2"><li>TABLE USER<pre id="a01ee9ea-d05d-47c8-8675-4f50d0e5f148" class="code"><code>UPDATE USER
-SET title="Prof"
-WHERE Ssn=500000106;</code></pre></li></ol><ol type="a" id="4ced35d1-8c71-4d2b-b17e-b47c14922951" class="numbered-list" start="3"><li>TABLE ORGANIZATION<pre id="75a8433c-0f4a-4cca-a049-e1a1b76d58ba" class="code"><code>UPDATE ORGANIZATION
-SET Admin_ssn=500000009
-WHERE Id=600000007;</code></pre></li></ol><p id="0da9a059-121b-4468-ac09-001dc9dfc606" class="">
-</p><p id="9bef4ac0-c227-4763-84f4-52cbc6c42ee3" class="">2 THE 10 STATEMENTS</p><ol type="a" id="6841cf25-cc6c-4ad4-b42a-77db785d5cd2" class="numbered-list" start="1"><li>Maximum One Table<p id="b551f5e6-6910-482a-a702-46e8c609336c" class="">1.Information of active organizations registered in the system and established after 2000...</p><pre id="0c5c1443-7b2a-4fdd-81d2-52ee30dc181a" class="code"><code>SELECT 
-  name, 
-  Start_date, 
-  Mission, 
-  Vision 
-FROM 
-  ORGANIZATION 
-WHERE 
-  YEAR(Start_date)&gt; 2000;</code></pre><p id="25e039b2-ddaa-4340-8ad4-d0596f8727ed" class="">
-</p><p id="564f9f38-6914-4ec6-bdab-f1cd16791529" class="">2.Posts in the system that contain phone numbers...</p><pre id="7bb28c22-3ad5-4548-8787-813b40365b2d" class="code"><code>SELECT 
-  Id, 
-  Account_id, 
-  Created_at, 
-  Content 
-FROM 
-  POST 
-WHERE 
-  Content LIKE "%5_________%" 
-  OR Content LIKE "%5__ ___ __ __%" 
-  OR Content LIKE "%(5__) ___ __ __%";</code></pre><p id="f7510378-8619-46ef-aa50-6e2f7c24a0e6" class="">
-</p><p id="58a8eee3-94df-413c-8953-896278833c68" class="">3.Data for comments with content longer than 25 characters...</p><pre id="502a31bc-c6db-44c4-99f5-3013b83631d1" class="code"><code>SELECT 
-  Comment_id, 
-  Account_id, 
-  Body 
-FROM 
-  COMMENT 
-WHERE 
-  CHAR_LENGTH(Body) &gt; 25;</code></pre><p id="182cc551-23c8-4f27-8d13-11d8ecd428cc" class="">
-</p></li></ol><ol type="a" id="f574b14a-ff24-4628-8383-6e22ee19e072" class="numbered-list" start="2"><li>Minimum Two Tables<p id="5033e143-fab1-48c1-bd01-a88fce4f0683" class="">1.The name of the course that has more than one assignment in the 2020 and the number of how many assignments it has in descending order...</p><pre id="5ed16b0c-e986-45e9-a4fd-aa9a1bdfbbc4" class="code"><code>SELECT 
-  C.Cname as Course_Name, 
-  COUNT(*) as Ass_Count 
-FROM 
-  COURSE AS C, 
-  ASSIGNMENT AS A 
-WHERE 
-  C.Id = A.Course_id 
-  AND YEAR(C.Cdate)= 2020 
-GROUP BY 
-  C.Id 
-ORDER BY 
-  Ass_Count DESC;</code></pre><p id="e64011aa-6f56-467e-ac9a-ce35f7e6f803" class="">
-</p><p id="5c4a11a6-23ec-43c7-98e4-e33edb45b5d9" class="">2.Data from teachers teaching Calculus 1.</p><pre id="25ee1a71-5e7f-4c4b-b0a6-e6b0077db8d2" class="code"><code>SELECT 
-  U.Ssn, 
-  U.name, 
-  C.Cdate as Course_date 
-FROM 
-  COURSE AS C, 
-  USER AS U 
-WHERE 
-  C.Teacher_ssn = U.Ssn 
-  AND C.Cname = "Calculus 1";</code></pre><p id="c9029775-404a-4e4d-8a04-cbdc5a18fa9d" class="">
-</p><p id="3c742c57-86b0-49a7-8542-9037b3a66b5b" class="">3.Data of most skilled 10 users in descending order</p><pre id="c633d0f4-26b6-4a62-8e0c-b31af354fb67" class="code"><code>SELECT title,
-       name,
-       last_logged,
-       COUNT(*) AS Skill_count
-FROM USER,
-     USER_SKILLS
-WHERE Ssn = User_ssn
-GROUP BY Ssn
-ORDER BY Skill_count DESC
-LIMIT 10;</code></pre><p id="842237e5-fe29-47d6-bd61-1a2cbf374d96" class="">
-</p><p id="3df28c90-2f86-495d-8a6f-11c339641b13" class="">4.Let a post list the replies to the comment that received more likes than the comment made.</p><pre id="5b03e660-cde3-4691-9a07-e78aa2ff93a9" class="code"><code>SELECT C.Comment_id,
-       AN.Answer_id,
-       C.Body AS C_body,
-       AN.Body AS A_body
-FROM COMMENT AS C,
-                ANSWER AS AN
-WHERE
-    (SELECT COUNT(*)
-     FROM LIKES AS L
-     WHERE AN.Likable_content_id = L.Likable_content_id
-       AND AN.Comment_id = C.Comment_id) &gt;
-    (SELECT COUNT(*)
-     FROM LIKES AS L
-     WHERE L.Likable_content_id = C.Likable_content_id);</code></pre></li></ol><p id="10e267e6-1c1b-4160-bb29-6866cce4e1c0" class="">
-</p><p id="5ca80d92-55d3-411a-bd75-fc28be99263f" class="">c. Minimum Three Tables</p><div class="indented"><p id="d57e27a9-670f-4659-bc9f-23e0e1f7322e" class="">1.The data of the projects worked by the users whose grade point average is higher than 50 from the assignments they have uploaded...</p><pre id="763246d8-e16d-4990-a896-8d0b559d1708" class="code"><code>SELECT U.Ssn,
-       U.name,
-       P.Pname,
-       P.Start_date,
-       P.End_date
-FROM USER AS U,
-             WORKS_ON_PROJECT AS WOP,
-             PROJECT AS P
-WHERE P.Id = WOP.Project_id
-  AND WOP.User_ssn = U.Ssn
-  AND (U.Ssn) IN
-    (SELECT AG.Student_ssn
-     FROM ASSIGNMENT_GRADE AS AG
-     GROUP BY AG.Student_ssn
-     HAVING AVG(AG.Grade)&gt;50) ;</code></pre><p id="076e40f9-5a0b-46c8-aa29-7be10ea9d62e" class="">
-</p><p id="d5e919bf-03f6-4427-a373-837666391e16" class="">2.The names,titles and last login dates of the five users with the most connections who have data on moodle ...</p><pre id="647e4a11-3512-404d-bf69-55ce84c893fc" class="code"><code>SELECT U.Name,
-       U.title,
-       U.last_logged
-FROM USER AS U,
-             TEACHER AS T,
-             STUDENT AS S
-WHERE (U.Ssn = T.Ssn
-       OR U.SSN = S.Ssn)
-  AND U.Ssn IN
-    (SELECT U.Ssn
-     FROM USER AS U,
-                  CONNECT AS C
-     WHERE U.Ssn = C.User_ssn
-       OR U.Ssn = C.Connected_ssn
-     GROUP BY U.Ssn
-     ORDER BY Count(*) DESC)
-LIMIT 5 ;</code></pre><p id="5ae2bec1-3fe0-479b-8e1b-e4d02ce8e757" class="">
-</p><p id="1398a39b-1b5a-4441-9049-56cb6b341ee9" class="">3.Number of assignments submitted and graded by students who enrolled to the most courses...</p><pre id="3b8fa546-adee-4f2f-a937-2fc7b171c16a" class="code"><code>WITH RECURSIVE MOST_ENROLLED_USERS(Ssn, total)AS
-  (SELECT U.Ssn,
-          COUNT(*) AS total
-   FROM STUDENT AS U,
-        ENROLLS AS E
-   WHERE U.Ssn = E.Student_ssn
-   GROUP BY U.Ssn
-   UNION SELECT M.Ssn,
-                M.total
-   FROM MOST_ENROLLED_USERS AS M)
-SELECT M.Ssn,
-       M.total,
-       USER.name,
-
-  (SELECT COUNT(*)
-   FROM ASSIGNMENT_UPLOAD AS A
-   WHERE A.Student_ssn = M.Ssn) AS uploaded_as ,
-
-  (SELECT COUNT(*)
-   FROM ASSIGNMENT_GRADE AS A
-   WHERE A.Student_ssn = M.Ssn) AS graded_as
-FROM MOST_ENROLLED_USERS AS M,
-     USER
-WHERE M.Ssn = USER.Ssn
-ORDER BY total DESC
-LIMIT 5;</code></pre></div><p></p><p id="216c6ad9-54e8-4b13-bf39-6136aae2b8c8" class="">
-</p></div><p></p><p id="e8dff91d-4661-4ef7-a738-62453ae24b52" class="">3 THE 5 ORIGINAL STATEMENT</p><p id="05331376-c577-41f1-9d3a-66392acf3414" class=""></p><div class="indented"><p id="28956640-510c-43c3-b594-c33238027c52" class="">1.The number of talents of students who have not uploaded any assignment they are responsible for...</p><pre id="e08517a1-530e-4c68-98fa-aeac529f7482" class="code"><code>SELECT S.Ssn,
-       COUNT(*) AS skill_c
-FROM STUDENT AS S,
-     ASSIGNMENT AS A,
-                   USER_SKILLS AS SKILL
-WHERE SKILL.User_ssn = S.Ssn
-  AND NOT EXISTS
-    (SELECT *
-     FROM ASSIGNMENT_UPLOAD AS UPLOAD
-     WHERE S.Ssn = UPLOAD.Student_ssn )
-  AND A.Assignment_id IN
-    (SELECT A.Assignment_id
-     FROM ENROLLS AS E
-     WHERE A.Course_id = E.Course_id
-       AND S.Ssn = E.Student_ssn )
-GROUP BY SKILL.User_ssn;</code></pre><p id="d416f29e-c7b7-4844-a5c5-3b198d0d69f5" class="">
-</p><p id="597fb3d8-cb31-4d9d-ab96-281204b00196" class="">2.Project data including students who enroll in lessons given by teachers who speak more than one language...</p><pre id="a2971e54-b306-47cf-b498-39171500c0b4" class="code"><code>SELECT E.Student_ssn,
-       P.Pname,
-       P.Pdesc,
-       P.Start_date
-FROM ENROLLS AS E,
-     COURSE AS CRS,
-     PROJECT AS P,
-     WORKS_ON_PROJECT AS WOP
-WHERE WOP.User_ssn = E.Student_ssn
-  AND WOP.Project_id = P.Id
-  AND CRS.Id IN
-    (SELECT CRS.Id
-     FROM TEACHER AS T
-     WHERE CRS.Teacher_ssn = T.Ssn
-       AND T.Ssn IN
-         (SELECT T.Ssn
-          FROM USER_LANGS AS UL
-          WHERE T.Ssn = UL.User_ssn
-          GROUP BY T.Ssn
-          HAVING COUNT(*)&gt;1) );</code></pre><p id="3ddf5ad9-784d-40ce-af11-027367e32d8c" class="">
-</p><p id="c1c35543-f3b0-4256-9d59-d71c31a7f232" class="">3.As a result of the evaluation of the teachers registered in the system based on Assignments, the data of the 5 teachers with the best evaluation...</p><div class="indented"><p id="2e771a97-c5de-4994-bf7c-6756afc08aab" class="">In evaluation:</p><div class="indented"><ul id="d7385041-3d11-4daf-8281-652d4a63dd13" class="bulleted-list"><li style="list-style-type:disc">The time which spend to teacher to evaluate submitted Assignment (Low Good)</li></ul><ul id="5d21dbb0-f59d-4541-96f9-bb5ca81bf462" class="bulleted-list"><li style="list-style-type:disc">Grade point averages of the students in the relevant course (High Good)</li></ul></div><p></p></div><p></p><pre id="08a2f1ca-38fe-4776-9646-3a94296853a0" class="code"><code>SELECT C.Teacher_ssn,
-       U.name AS Teacher_name,
-       AVG(TIMESTAMPDIFF(HOUR, AU.Upload_date, AG.Grade_date)) AS avg_time,
-       AVG(AG.Grade) AS t_avg_grade,
-       count(*) AS std_count
-FROM ASSIGNMENT_UPLOAD AS AU,
-     ASSIGNMENT_GRADE AS AG,
-     COURSE AS C,
-     USER AS U
-WHERE C.Teacher_ssn = U.Ssn
-  AND C.Id = AG.Course_id
-  AND AU.Assignment_id = AG.Assignment_id
-GROUP BY C.Teacher_ssn
-ORDER BY t_avg_grade DESC,
-         avg_time ASC ;</code></pre><p id="b1cef85c-df32-4b8f-b45f-46c5f353141d" class="">
-</p><p id="59478873-2447-4f0c-8dc4-94ca4418a524" class="">4.The data of the teacher of the course that gives more than three Assignment and how many students take this course..</p><pre id="80b184e7-ea28-4ae8-910d-fbc21bc1fe91" class="code"><code>SELECT U.Ssn AS T_ssn,
-       U.name AS Tname,
-       C.Cname,
-       Count(*) AS St_Count
-FROM USER AS U,
-             COURSE AS C,
-             ENROLLS AS E
-WHERE C.Teacher_ssn = U.Ssn
-  AND C.Id = E.Course_id
-  AND C.Id IN
-    (SELECT A.Course_id
-     FROM ASSIGNMENT AS A,
-                        COURSE AS C
-     WHERE A.Course_id = C.Id
-     GROUP BY A.Course_id
-     HAVING COUNT(*)&gt;3)
-GROUP BY E.Course_id;</code></pre><p id="b9dac10d-4ee2-46b4-b5ae-41c2b3609b43" class="">
-</p><p id="f9608dfe-df15-4e0c-9adc-25997ac1928f" class="">5.The names, titles, average grades, the number of languages they know and the number of talents they have of users with the highest average according to graded assignments.</p><pre id="95e57cd1-7170-45a1-8f99-f3e20f059759" class="code"><code>WITH RECURSIVE AVG_GRADES(Ssn, Avarage_grade) AS
-  (SELECT Student_ssn,
-          AVG(Grade)
-   FROM ASSIGNMENT_GRADE
-   GROUP BY Student_ssn
-   UNION SELECT AG.Ssn,
-                Ag.Avarage_grade
-   FROM AVG_GRADES AS AG)
-SELECT name,
-       title,
-       AG.Avarage_grade,
-
-  (SELECT COUNT(*)
-   FROM USER_LANGS AS UL
-   WHERE UL.User_ssn = AG.Ssn) AS lang_count,
-
-  (SELECT COUNT(*)
-   FROM USER_SKILLS AS US
-   WHERE US.User_ssn = AG.Ssn) AS skill_count
-FROM AVG_GRADES AS AG,
-     USER
-WHERE USER.Ssn = AG.Ssn
-ORDER BY AG.Avarage_grade DESC
-LIMIT 5;</code></pre></div><p></p></li></ol></div></article></body></html>
+</style></head><body><article id="71532f08-be91-4c5b-a334-e7364e0dc013" class="page sans"><header><h1 class="page-title"></h1></header><div class="page-body"><h1 id="972bfb94-7a2e-430e-bd7b-02a9e7f36f03" class="">Linkedin-Moodle Database</h1><h2 id="0a2323cd-3c89-4b11-ad70-ce03ac4173a9" class="">Analysis</h2><h3 id="423c4d09-cb74-4587-96f4-a6a3bf8a95de" class="">1.Brief Explanatşon of Applications</h3><ol type="1" id="ab0a4790-9693-4a6c-af03-3a920bc04e51" class="numbered-list" start="1"><li>Linkedin<p id="2c11bdbe-a3f1-4be9-8871-e87d2b4b1028" class="">LinkedIn is a social platform that allows its users to create profiles about their careers and interact with other professionals. This platform consists of accounts for personal users and organizations. Users have personal information, training, skills, past experiences, languages, and so on. Furthermore, they can share the projects they have contributed to over the years, the people they have worked with, which organization they were working for at the time, and post about their interests in that sector. Users can also connect with other users, and they can like, comment, and answer content shared by other users or organizations. And if the user wants, they can create an organization account in the system, manage its employees, share a post about new job openings, and so forth.</p></li></ol><ol type="1" id="e11b5f3f-d68a-4fa3-aff1-3c57068ca2f1" class="numbered-list" start="2"><li>Moodle<p id="e357ea9f-40f1-40cf-ba17-7c96425dc063" class="">Moodle is a learning management system that serves teachers and students. Teachers create courses, and students can take these courses by enrolling. Each course includes various assignments like exams and projects. These assignments can only get assigned by the teachers that created the course. Subsequently, students can upload these assignments before deadlines. In summary, Moodle is a system that consists of courses, teachers giving those courses, students who take those courses, assignments given by teachers, et cetera.</p></li></ol><h3 id="1e0c0733-562d-47bd-9bec-7825ecfeb503" class="">2. Analysis Report</h3><ul id="1e76f408-c19f-42d3-85ce-182755f89750" class="bulleted-list"><li style="list-style-type:disc"><mark class="highlight-purple"><span style="border-bottom:0.05em solid"><strong>Main</strong></span></mark><span style="border-bottom:0.05em solid"><strong> </strong></span><mark class="highlight-purple"><span style="border-bottom:0.05em solid"><strong>Entities</strong></span></mark><p id="824312f9-e4d2-4c3d-96fe-39e4d568de76" class=""><strong>Linkedin Database </strong><div class="indented"><p id="8d26b2f4-d6ac-43a8-9281-5df0617261d0" class="">• USER </p><p id="0fc8450d-beb7-4cfe-afe8-ed0ddc7fdaac" class="">• ORGANIZATION </p><p id="7ab148ab-e750-475f-b5c9-0fca47ddab73" class="">• PROJECT </p><p id="cac352d9-0779-4a8f-b70d-b64ab0943bdd" class="">• ACCOUNT </p><p id="a548c7b9-e28c-43f3-800f-145579a9295b" class="">• POST </p><p id="93107991-0269-4283-bc8c-e6ca63d788a7" class="">• COMMENT </p><p id="ffbc1cd4-2368-4038-a741-799824a98acb" class="">• LIKABLE_CONTENT </p></div></p><p id="b464c4d5-3881-4057-8106-6892f5f5d281" class=""><strong>Moodle Database </strong><div class="indented"><p id="7eb7cea1-cc48-4f29-b6a7-b2b67f362a4d" class="">• STUDENT </p><p id="747be90d-ae73-41f2-a6cc-a7a0920b64e5" class="">• TEACHER </p><p id="cbc06258-5057-4d29-8066-7d3890348aab" class="">• COURSE </p><p id="e8d712e3-9abf-43d1-b3d4-e67774597c62" class="">• ASSIGNMENT </p></div></p><p id="07cd588e-a0f9-4cdf-9eb0-93049ce556f1" class=""><strong>Linkedin-Moodle Database </strong><div class="indented"><p id="75a865f1-9579-4198-9b08-5fc0eece3b20" class="">• USER </p><p id="0cf649a1-78cb-4866-a933-ec7908fd25d1" class="">• ORGANIZATION </p><p id="995dbb1f-c151-43da-a27b-b77fa8e76de8" class="">• ACCOUNT </p><p id="d47f662b-92c1-4b88-8296-d2c6cd7b3f0f" class="">• MOODLE_MEMBER </p><p id="4f04173d-fdeb-4f5e-a720-f1eda2daad80" class="">• STUDENT </p><p id="05e7eaf9-f78a-49e5-a4b0-6d8c995aa728" class="">• TEACHER </p><p id="b7bb4349-cf7d-42e7-8ff7-928e17fe9533" class="">• COURSE </p><p id="1c5b9ff4-828d-46e9-b25f-f9fa26921cd1" class="">• ASSIGNMENT </p><p id="05b65f25-f647-43ca-a3e0-0ae3c6534df5" class="">• PROJECT </p><p id="3240c0bb-a7b3-4eac-a654-1cc6805ca469" class="">• LIKABLE_CONTENT </p><p id="bdabea7a-a558-4b4f-8883-4087ba76501b" class="">• POST </p><p id="2e688087-8605-4725-bd50-eed9bd39a501" class="">• COMMENT </p><p id="857b4199-7879-407c-b2a7-cc399ee7127b" class="">• ANSWER</p></div></p></li></ul><ul id="16e8a93d-f2f5-47f1-a8b1-6b7c40af69f6" class="bulleted-list"><li style="list-style-type:disc"> <mark class="highlight-purple"><span style="border-bottom:0.05em solid"><strong>Characteristics of Each Entity</strong></span></mark><p id="633affdd-c62c-4e69-bf2a-64ec1d08aab1" class=""><strong>Linkedin Database </strong><div class="indented"><p id="ba0933bf-00cd-4c6c-9327-c05643596207" class="">• USER: Strong Entity </p><p id="85d90a94-76ad-4087-9404-891d41cb828c" class="">• ORGANIZATION : Strong Entity </p><p id="1db99f6a-baa4-4cd8-8209-d9da93d6575e" class="">• PROJECT : Strong Entity </p><p id="683f607a-fd4a-493d-9de1-6532dd3f931e" class="">• ACCOUNT : Strong Entity </p><p id="da83cad1-b253-407a-b5e3-33980aa9c2dd" class="">• POST : Weak Entity </p><p id="16671a11-31eb-4351-b2c4-b67f08860280" class="">• COMMENT : Weak  Entity</p><p id="14667859-5fda-437d-94c2-629aa265d6e9" class="">• ANSWER : Weak Entity </p><p id="150cf158-37dd-4305-8121-1f2b82e9b7cc" class="">• LIKABLE_CONTENT : Strong Entity </p></div></p><p id="7a76e685-e677-4716-8fcc-fab99b60abd5" class=""><strong>Moodle Database </strong><div class="indented"><p id="8f076b66-9588-4140-b9c5-42b2928f0f37" class="">• STUDENT : Strong Entity </p><p id="9549f54d-3e05-44d3-b022-63f9e65e3113" class="">• TEACHER : Strong Entity </p><p id="ee6b4b28-7af2-4bbf-bdaf-16cf69a3745d" class="">• COURSE : Strong Entity </p><p id="02595144-f71b-488f-aaaa-15fa33cfbd25" class="">• ASSIGNMENT : Weak Entity </p></div></p><p id="e6176d00-413e-4d6a-9355-a4411b45787b" class=""><strong>Linkedin-Moodle Database </strong><div class="indented"><p id="15370612-5693-428b-a956-ce3cfabf6765" class="">• USER : Strong Entity </p><p id="ad6bc126-6f92-49c3-8546-bc51823d18a2" class="">• ORGANIZATION : Strong Entity </p><p id="a399f654-d58e-45cf-bbeb-fb8421b41868" class="">• ACCOUNT : Strong Entity</p><p id="369f1de4-8188-4e4c-ab9f-ff99d1d4dfd6" class="">• MOODLE_MEMBER : Strong Entity </p><p id="42313b30-5b51-4273-ad54-442ee39c53ea" class="">• STUDENT : Strong Entity </p><p id="c17ae7d7-35a4-4c3f-84e1-83324fb56b43" class="">• TEACHER : Strong Entity </p><p id="6417574c-2126-4bac-8df7-4d6de3bc6dfe" class="">• COURSE : Strong Entity </p><p id="60f2d578-4ffe-4a2f-83ae-7a92efcb8a61" class="">• ASSIGNMENT : Weak Entity </p><p id="74992cec-49bd-476f-8bb8-07ea8ebcd40d" class="">• PROJECT : Strong Entity </p><p id="93fb0456-f8f5-4266-a9bd-5e541bb3541b" class="">• LIKABLE_CONTENT : Strong Entity </p><p id="957aedd6-d5a6-4bb4-a442-a3f826e4d571" class="">• POST : Weak Entity </p><p id="67f2c29c-3b88-4b3f-a386-6e1a86bb78bd" class="">• COMMENT : Weak Entity </p><p id="13ad96b9-a32e-4682-9d3c-d7000ed91026" class="">• ANSWER : Weak Entity</p></div></p></li></ul><ul id="95b4bd45-03b0-4c87-a32b-0784675f27d0" class="bulleted-list"><li style="list-style-type:disc"><mark class="highlight-purple"><span style="border-bottom:0.05em solid"><strong>RelationShips Among Entities</strong></span></mark><p id="8d54bf91-8091-4b8b-9ece-ab602c2118cb" class=""><strong>Linkedin Database</strong></p><ul id="a78f84f8-eaf5-4a6d-a371-325a1a151ece" class="bulleted-list"><li style="list-style-type:circle">USER.Ssn --&gt; ACCOUNT.Account_id</li></ul><ul id="e1efdf4c-3e55-4066-af74-7b2fbff40ef4" class="bulleted-list"><li style="list-style-type:circle">USER_SKILLS. User_ssn --&gt; USER.Ssn</li></ul><ul id="7d32b0e5-485a-4812-a132-36f91d751a49" class="bulleted-list"><li style="list-style-type:circle">USER_LANGS.User_ssn --&gt; USER.Ssn</li></ul><ul id="e1e4ae52-e2a6-440c-b149-04ae0ba7da9c" class="bulleted-list"><li style="list-style-type:circle">CONNECT.User_ssn --&gt; USER.Ssn</li></ul><ul id="2837795b-56ce-4df9-b142-98ff7fd7d4fa" class="bulleted-list"><li style="list-style-type:circle">CONNECT.Connected_Ssn --&gt; USER.Ssn</li></ul><ul id="167e1be0-3a10-41d2-8453-6fe6395a45b8" class="bulleted-list"><li style="list-style-type:circle"><a href="http://organization.id/">ORGANIZATION.Id</a> --&gt;ACCOUNT.Account_id</li></ul><ul id="2bb0d910-a570-4b14-9c48-f534eb3ebd53" class="bulleted-list"><li style="list-style-type:circle">ORGANIZATION.Admin_ssn --&gt; USER.Ssn</li></ul><ul id="9e07ce94-2847-4dd8-982e-ba1ef20dd459" class="bulleted-list"><li style="list-style-type:circle">PROJECT.Org_id --&gt;<a href="http://organization.id/">ORGANIZATION.Id</a></li></ul><ul id="618fb9d3-8ad1-4b46-95d2-c30aefc01aba" class="bulleted-list"><li style="list-style-type:circle">WORKS_FOR_ORG.User_ssn --&gt; USER.Ssn</li></ul><ul id="3da5b367-2ff4-4cfb-9bc7-75140336e97f" class="bulleted-list"><li style="list-style-type:circle">WORKS_FOR_ORG.Org_id --&gt; <a href="http://organization.id/">ORGANIZATION.Id</a></li></ul><ul id="4f91079f-005a-42f1-95b0-feddfb9c4ec9" class="bulleted-list"><li style="list-style-type:circle">POST.Account_id --&gt; ACCOUNT.Account_id</li></ul><ul id="e02e0fe3-17ce-4131-bae3-5a39a041d04d" class="bulleted-list"><li style="list-style-type:circle">POST.Likable_content_id --&gt; LIKABLE_CONTENT.Id</li></ul><ul id="795bed95-f4fc-4978-9d82-74a0846f8aac" class="bulleted-list"><li style="list-style-type:circle">WORKS_ON_ROJECT.User_ssn --&gt; USER.Ssn</li></ul><ul id="79e16c6b-2ae0-4a6d-87d8-87e2a2b1d574" class="bulleted-list"><li style="list-style-type:circle">WORKS_ON_ROJECT.Project_id --&gt; <a href="http://project.id/">PROJECT.Id</a></li></ul><ul id="f57e9fa1-71e4-4073-839b-99079f68a515" class="bulleted-list"><li style="list-style-type:circle">COMMENT.User_ssn --&gt; USER.Ssn</li></ul><ul id="23d5c7cb-4eea-42fd-9148-6aeadc72bce4" class="bulleted-list"><li style="list-style-type:circle">COMMENT.Post_id,Account_id --&gt; POST.(Id,Account_id)</li></ul><ul id="85b4183d-29d1-47c0-8dcc-db5e8acf172e" class="bulleted-list"><li style="list-style-type:circle">COMMENT.Likable_content_id --&gt; LIKABLE_CONTENT.Id</li></ul><ul id="2902cfba-2eac-4917-9a30-1ad498b81ae5" class="bulleted-list"><li style="list-style-type:circle">ANSWER.User_ssn --&gt; USER.Ssn</li></ul><ul id="eee3c406-f65e-4a73-8a03-9c3d4deb55c0" class="bulleted-list"><li style="list-style-type:circle">ANSWER.Comment_id,Account_id,Post_id) --&gt;COMMENT(Comment_id,Account_id,Post_id),</li></ul><ul id="292c64b5-21fb-4768-b7d5-d0f02184ae28" class="bulleted-list"><li style="list-style-type:circle">ANSWER.(Post_id,Account_id) --&gt; POST.(Id,Account_id)</li></ul><ul id="415ee898-f0a9-4e17-9a7e-1d53b99df4af" class="bulleted-list"><li style="list-style-type:circle">ANSWER.(Likable_content_id) --&gt; LIKABLE_CONTENT.Id</li></ul><ul id="37fa93f7-c1f0-4b1a-87ac-4e97ae4c7db6" class="bulleted-list"><li style="list-style-type:circle">LIKES.User_ssn --&gt; USER.Ssn</li></ul><ul id="d2f9b3b6-44a4-4549-a4df-1c097e18e1a5" class="bulleted-list"><li style="list-style-type:circle">LIKES.Likable_content_id) --&gt; LIKABLE_CONTENT.Id</li></ul><p id="e261e401-e78b-4e44-a205-902d674dca9a" class=""><strong>Moodle Database</strong></p><ul id="9efbad6c-5ed2-4801-9d13-27519a77d48f" class="bulleted-list"><li style="list-style-type:circle">COURSE.Teacher_ssn --&gt; TEACHER.Ssn</li></ul><ul id="83232cf1-9ba9-48c9-a8fb-cbe939bbf331" class="bulleted-list"><li style="list-style-type:circle">ASSIGNMENT.Course_id --&gt; <a href="http://course.id/">COURSE.Id</a></li></ul><ul id="cc37b9bb-8340-423e-89e5-db0bf06326c1" class="bulleted-list"><li style="list-style-type:circle">ASSIGNMENT_UPLOAD.Assignment_id,Course_id) --&gt; ASSIGNMENT.(Assignment_id,Course_id)</li></ul><ul id="0b82c82f-9421-4af6-9c8d-2b2a49e706d3" class="bulleted-list"><li style="list-style-type:circle">ASSIGNMENT_UPLOAD.Student_ssn) --&gt; STUDENT.Ssn</li></ul><ul id="d739b72d-ec05-4670-8a94-724528c4d577" class="bulleted-list"><li style="list-style-type:circle">ASSIGNMENT_UPLOAD.Student_ssn) --&gt; USER.Ssn</li></ul><ul id="246b5174-de39-4867-b080-fd568e8e2eaa" class="bulleted-list"><li style="list-style-type:circle">ASSIGNMENT_GRADE.Assignment_id,Course_id) --&gt; ASSIGNMENT.(Assignment_id,Course_id)</li></ul><ul id="7fde35b7-0647-44a1-8918-d47b419265f7" class="bulleted-list"><li style="list-style-type:circle">ASSIGNMENT_GRADE.Student_ssn) --&gt; STUDENT.Ssn</li></ul><ul id="edb21fa2-2dfa-46db-83be-0ac6892dec50" class="bulleted-list"><li style="list-style-type:circle">ASSIGNMENT_GRADE.Student_ssn) --&gt; USER.Ssn</li></ul><ul id="3fb54e92-59be-40b8-bbbf-0d0b002777e6" class="bulleted-list"><li style="list-style-type:circle">ENROLLS.Course_id) --&gt; <a href="http://course.id/">COURSE.Id</a></li></ul><ul id="f65e0b79-3824-4040-a18c-232e570c76ee" class="bulleted-list"><li style="list-style-type:circle">ENROLLS.Student_ssn) --&gt; STUDENT.Ssn</li></ul><ul id="a08764c3-741e-4b99-bfea-52fc32bad043" class="bulleted-list"><li style="list-style-type:circle">ENROLLS.Student_ssn) --&gt; USER.Ssn</li></ul><p id="06523396-6ce7-4ff8-bc58-06968a7a8a08" class=""><strong>Linkedin-Moodle Database</strong></p><ul id="d73609b6-3a6a-4312-a21f-1cca4b7eed87" class="bulleted-list"><li style="list-style-type:circle">USER.Ssn --&gt; ACCOUNT.Account_id</li></ul><ul id="0947d5c5-ff9c-4a91-8225-7b2f1bd6ab12" class="bulleted-list"><li style="list-style-type:circle">USER_SKILLS. User_ssn --&gt; USER.Ssn</li></ul><ul id="8ecb94dc-a8fc-4b6f-bb3a-a826a594f936" class="bulleted-list"><li style="list-style-type:circle">USER_LANGS.User_ssn --&gt; USER.Ssn</li></ul><ul id="674c9c13-c83e-4e3e-b566-be130ee9fddb" class="bulleted-list"><li style="list-style-type:circle">CONNECT.User_ssn --&gt; USER.Ssn</li></ul><ul id="4275660e-8b88-4d54-83a3-24b88b8bb266" class="bulleted-list"><li style="list-style-type:circle">CONNECT.Connected_Ssn --&gt; USER.Ssn</li></ul><ul id="ed7cfe84-3ac2-4858-9717-5c792861bb47" class="bulleted-list"><li style="list-style-type:circle"><a href="http://organization.id/">ORGANIZATION.Id</a> --&gt;ACCOUNT.Account_id</li></ul><ul id="0c0be8f9-9bde-496f-adf0-5022ee2a67a0" class="bulleted-list"><li style="list-style-type:circle">ORGANIZATION.Admin_ssn --&gt; USER.Ssn</li></ul><ul id="6d26b3bc-f3da-4399-9521-d1ec99f66e8a" class="bulleted-list"><li style="list-style-type:circle">PROJECT.Org_id --&gt;<a href="http://organization.id/">ORGANIZATION.Id</a></li></ul><ul id="046a611f-c2f7-4843-8e9f-61844d546d24" class="bulleted-list"><li style="list-style-type:circle">WORKS_FOR_ORG.User_ssn --&gt; USER.Ssn</li></ul><ul id="9db724cc-6b15-4d56-a8b8-eea5ad38b7ba" class="bulleted-list"><li style="list-style-type:circle">WORKS_FOR_ORG.Org_id --&gt; <a href="http://organization.id/">ORGANIZATION.Id</a> 6</li></ul><ul id="7630eedc-e8b9-453f-8e74-b26c13b15938" class="bulleted-list"><li style="list-style-type:circle">POST.Account_id --&gt; ACCOUNT.Account_id</li></ul><ul id="507d9bb5-6361-4470-b758-75abd852a742" class="bulleted-list"><li style="list-style-type:circle">POST.Likable_content_id --&gt; LIKABLE_CONTENT.Id</li></ul><ul id="e2154791-3f79-49fd-b62a-178b88b8b230" class="bulleted-list"><li style="list-style-type:circle">WORKS_ON_ROJECT.User_ssn --&gt; USER.Ssn</li></ul><ul id="46cabf1b-2235-47ac-b952-28ef62533b86" class="bulleted-list"><li style="list-style-type:circle">WORKS_ON_ROJECT.Project_id --&gt; <a href="http://project.id/">PROJECT.Id</a></li></ul><ul id="2a281fac-0c75-4ba9-b5ae-c77602f16fc3" class="bulleted-list"><li style="list-style-type:circle">COMMENT.User_ssn --&gt; USER.Ssn</li></ul><ul id="d5584a6b-cfb5-4c11-9f87-13d556e7c101" class="bulleted-list"><li style="list-style-type:circle">COMMENT.Post_id,Account_id --&gt; POST.(Id,Account_id)</li></ul><ul id="779da3f7-31d9-4ab4-9020-a7d82eb2e0e8" class="bulleted-list"><li style="list-style-type:circle">COMMENT.Likable_content_id --&gt; LIKABLE_CONTENT.Id</li></ul><ul id="0e7addad-aca4-4f9f-8d51-b1bf37ea5818" class="bulleted-list"><li style="list-style-type:circle">ANSWER.User_ssn --&gt; USER.Ssn</li></ul><ul id="9ea884bb-74e5-449e-8523-61ada1283bc3" class="bulleted-list"><li style="list-style-type:circle">ANSWER.Comment_id,Account_id,Post_id) --&gt;COMMENT.(Comment_id,Account_id,Post_id),</li></ul><ul id="713f90a0-6005-4448-bb38-85ed2b10fa98" class="bulleted-list"><li style="list-style-type:circle">ANSWER.(Post_id,Account_id) --&gt; POST.(Id,Account_id)</li></ul><ul id="ed898917-3922-4ef4-ba48-afc893f4a3f7" class="bulleted-list"><li style="list-style-type:circle">ANSWER.(Likable_content_id) --&gt; LIKABLE_CONTENT.Id</li></ul><ul id="3feff8a2-9f79-4040-976b-a6558d47a219" class="bulleted-list"><li style="list-style-type:circle">COURSE.Teacher_ssn --&gt; TEACHER.Ssn</li></ul><ul id="7103eb07-9bd1-41e1-b773-ca71151e98eb" class="bulleted-list"><li style="list-style-type:circle">ASSIGNMENT.Course_id --&gt; <a href="http://course.id/">COURSE.Id</a></li></ul><ul id="353bfa40-7496-42f4-9a05-df41093c1e53" class="bulleted-list"><li style="list-style-type:circle">ASSIGNMENT_UPLOAD.Assignment_id,Course_id) --&gt; ASSIGNMENT.(Assignment_id,Course_id)</li></ul><ul id="4eae455a-3a06-469d-aa59-3eaf097229a1" class="bulleted-list"><li style="list-style-type:circle">ASSIGNMENT_UPLOAD.Student_ssn) --&gt; STUDENT.Ssn</li></ul><ul id="cb0b5149-0e75-4cee-bb23-265eaf67f88d" class="bulleted-list"><li style="list-style-type:circle">ASSIGNMENT_UPLOAD.Student_ssn) --&gt; USER.Ssn</li></ul><ul id="0f79e2b8-6869-42fe-a2c7-b12b7ddecdc2" class="bulleted-list"><li style="list-style-type:circle">ASSIGNMENT_GRADE.Assignment_id,Course_id) --&gt; ASSIGNMENT.(Assignment_id,Course_id)</li></ul><ul id="706cdf95-d479-4048-bdbd-801e9d6a0b14" class="bulleted-list"><li style="list-style-type:circle">ASSIGNMENT_GRADE.Student_ssn) --&gt; STUDENT.Ssn</li></ul><ul id="18649a83-ffef-4c62-ba18-066711a0e980" class="bulleted-list"><li style="list-style-type:circle">ASSIGNMENT_GRADE.Student_ssn) --&gt; USER.Ssn</li></ul><ul id="90d551fa-d1a4-466c-bce1-afb3b727f5d7" class="bulleted-list"><li style="list-style-type:circle">ENROLLS.Course_id) --&gt; <a href="http://course.id/">COURSE.Id</a> • ENROLLS.Student_ssn) --&gt; STUDENT.Ssn</li></ul><ul id="a9dd5e48-a188-48f5-91c7-0161f52da7e2" class="bulleted-list"><li style="list-style-type:circle">ENROLLS.Student_ssn) --&gt; USER.Ssn • LIKES.User_ssn --&gt; USER.Ssn</li></ul><ul id="1c5dfa1c-95f7-4b58-8141-3f40e940f9e5" class="bulleted-list"><li style="list-style-type:circle">LIKES.Likable_content_id) --&gt; LIKABLE_CONTENT.Id</li></ul></li></ul><ul id="ebbeeee2-abbf-4a21-aee7-c0952962734f" class="bulleted-list"><li style="list-style-type:disc"><mark class="highlight-purple"><span style="border-bottom:0.05em solid"><strong>Constraints, Characteristics and Relationships</strong></span></mark><p id="bd0dd6d4-cd7d-427a-888d-5439acaf65ff" class=""><strong>Linkedin Database</strong></p><p id="804f5b57-52dc-4b89-ac6f-18ac0949fe33" class="">The LinkedIn database includes USER, ORGANIZATION, PROJECT, ACCOUNT, POST, COMMENT, ANSWER, and LIKABLE_CONTENT entities. User, organization, project, account, and likable content. Post, a comment, and an answer are weak entities. Account entity is a strong entity, and the post entity is a strong entity of the comment entity, and the comment entity is a strong entity of the answer entity. Therefore;
+</p><p id="5c701262-f033-49da-b05c-5ce8b16a1288" class="">- A post record with an account id that doesn&#x27;t exist in our database can&#x27;t be inserted.
+</p><p id="0fc31979-e873-4d26-ab48-ecd05b709074" class="">- A comment record with a post id that doesn&#x27;t exist in our database can&#x27;t be inserted.
+</p><p id="447601a2-005b-4de9-9fcc-9c016c6c0f88" class="">- An answer record with a comment id that doesn&#x27;t exist in our database can&#x27;t be inserted.
+</p><p id="461af0df-85e6-4df1-b947-c0e479f0120f" class="">When we insert a post record, comment record, or answer record we create a likable content record for them.
+</p><p id="2b227bff-f67e-4bfc-8688-8e5d121bd4f6" class="">Organizations can create posts but they can&#x27;t interact with them in any way or form.</p><p id="08617eaf-dc50-4c24-82a4-dc40a3fb4fe8" class="">
+</p><p id="f937eb8c-51de-4340-865e-1949fada064f" class=""><strong>Moodle Database</strong></p><p id="f3d43e97-2d47-4d34-b466-b957f9bc5349" class="">The Moodle database includes STUDENT, TEACHER COURSE, and ASSIGNMENT
+entities. Student, teachers, and courses are strong entities. The assignment entity is a weak
+entity, and its strong entity is the course. If there is no course entity in the system, the
+assignment entity cannot be created.A course can be created by one teacher, so course_id can not be repeated.</p></li></ul><h3 id="cfc3d289-ac0c-4d78-be3e-5e6061a7995d" class="">3. Conceptual Design</h3><figure id="d4dc89ac-afa0-44d7-8b11-98515143dad5" class="image"><a href="Untitled%20d4dc8/Untitled.png"><img style="width:2199px" src="Untitled%20d4dc8/Untitled.png"/></a></figure><p id="6e336f4f-d62e-48f1-8d0a-e13d3c23be9c" class="">
+</p><h3 id="aa977689-1d09-4b0c-b5a6-f1b3a988bb65" class="">4. Mapping</h3><p id="5e6aeff1-8e59-483c-b211-23c61a8aa16c" class=""><mark class="highlight-red">ITERATION 1
+</mark></p><p id="cdf52065-e28d-4a2a-b693-cb4526285e22" class=""><span style="border-bottom:0.05em solid"><mark class="highlight-blue">STEP 1</mark></span>
+COURSE ( Id , Name , Date)
+ORGANIZATION ( Id, Name , Start_date , Mision ,Vision)
+PROJECT ( Id , Pname , Start_date , End_date , Desc )
+<mark class="highlight-blue"><span style="border-bottom:0.05em solid">STEP 2</span></mark></p><p id="7564f427-7aba-4130-b78e-08a9ac717fac" class="">ASSIGNMENT(<span style="border-bottom:0.05em solid">Course_id</span>,Assignment_id,Name,Percent,Assign_date)<mark class="highlight-blue"><span style="border-bottom:0.05em solid">
+STEP 3
+STEP 4
+</span></mark>PROJECT ( __ , Org_id ) #MANAGE
+ORGANIZATION ( __ , Admin_ssn ) #ADMIN
+<mark class="highlight-blue"><span style="border-bottom:0.05em solid">STEP 5</span></mark>
+<mark class="highlight-blue"><span style="border-bottom:0.05em solid">STEP 6</span></mark>
+<mark class="highlight-blue"><span style="border-bottom:0.05em solid">STEP 7
+STEP 8</span></mark></p><p id="fcebd856-2f01-4162-8a91-4045abd9ab80" class="">USER (Ssn , Title , Name )
+<mark class="highlight-blue"><span style="border-bottom:0.05em solid">STEP 9</span></mark>
+ACCOUNT ( Account_id )
+ORGANIZATION ( __ , Account_id )
+USER ( __ , Account_id )
+</p><p id="af04e835-5c26-4a59-a349-9a72022bb67c" class=""><mark class="highlight-red">ITERATION 2</mark>
+</p><p id="de80f986-ce8d-48e3-886c-0f33cccccc4d" class=""><mark class="highlight-blue"><span style="border-bottom:0.05em solid">STEP 1 </span></mark>
+<mark class="highlight-blue"><span style="border-bottom:0.05em solid">STEP 2</span></mark>
+POST ( Post_id , Acc_id, Date , Content )
+<mark class="highlight-blue"><span style="border-bottom:0.05em solid">STEP 3
+STEP 4</span></mark>
+ORGANIZATION(__ , User_ssn)
+<mark class="highlight-blue"><span style="border-bottom:0.05em solid">STEP 5</span></mark>
+WORKS_ON( <span style="border-bottom:0.05em solid">User_ssn , Project_id </span>)</p><p id="8d5fa3bd-e6f9-478b-bb19-4e3dad725771" class="">WORKS_FOR( <span style="border-bottom:0.05em solid">User_ssn , Org_id</span> )</p><p id="263f93a1-8518-40bf-8128-eb57a07857f2" class="">CONNECT( <span style="border-bottom:0.05em solid">User_ssn , Connected_ssn</span> )</p><p id="229f1d73-a4e6-43b5-aa31-bfbb80fad0ad" class=""><mark class="highlight-blue"><span style="border-bottom:0.05em solid">STEP 6</span></mark></p><p id="71964a52-2546-4fa8-864d-012a702a9d70" class="">USER_LANGS( <span style="border-bottom:0.05em solid">User_ssn , Lang</span> )</p><p id="30a64b97-c9bc-4afc-8530-5fa5fca20eb3" class="">USER_SKILLS( <span style="border-bottom:0.05em solid">User_ssn , Skill</span> )<mark class="highlight-blue"><span style="border-bottom:0.05em solid">
+STEP 7</span></mark>
+<mark class="highlight-blue"><span style="border-bottom:0.05em solid">STEP 8</span></mark></p><p id="1628cef5-c6f0-4ee6-96f0-b56a91faeef8" class="">TEACHER( <span style="border-bottom:0.05em solid">Ssn</span> , title )</p><p id="85b0b112-c6cd-4808-baa4-114acd969b9f" class="">STUDENT( <span style="border-bottom:0.05em solid">Ssn</span> , number )<mark class="highlight-blue"><span style="border-bottom:0.05em solid">
+STEP 9</span></mark>
+</p><p id="4cc9a005-a027-4a82-8df8-f088ec3fbd37" class=""><mark class="highlight-red">ITERATION 3</mark></p><p id="0fb70f86-e8d8-4623-815c-f428ed0bb52d" class=""><mark class="highlight-blue"><span style="border-bottom:0.05em solid">STEP 1 </span></mark>
+<mark class="highlight-blue"><span style="border-bottom:0.05em solid">STEP 2</span></mark>
+COMMENT ( Account_id , Post_id , Comment_id , Content )
+<mark class="highlight-blue"><span style="border-bottom:0.05em solid">STEP 3
+STEP 4</span></mark>
+COURSE(__ , Teacher_ssn)</p><p id="becc8e7f-882b-43f0-8fe2-2774d9eecc54" class="">COMMENT(__ , User_ssn)
+<mark class="highlight-blue"><span style="border-bottom:0.05em solid">STEP 5</span></mark>
+ENROLLS( Student_ssn , Course_id )</p><p id="205d5d2c-cecf-4800-8596-640ffd7c1970" class="">UPLOAD( Course_id, Assignmet_id, Stundet_ssn , Uploaded )</p><p id="f30b28dd-6013-48c1-ba05-36fa9ec8c4f3" class="">GRADE( Course_id, Assignmet_id, Stundet_ssn , Grade , Grade_date )</p><p id="0048f833-5909-464a-9169-2e55c5c2e829" class=""><mark class="highlight-blue"><span style="border-bottom:0.05em solid">STEP 6
+STEP 7</span></mark>
+<mark class="highlight-blue"><span style="border-bottom:0.05em solid">STEP 8
+STEP 9</span></mark></p><p id="590a55e1-391f-4fa7-aa3c-21e84d7d8594" class="">
+</p><p id="c8ac409c-99b7-4406-9c4d-7cd1282f36c3" class=""><mark class="highlight-red">ITERATION 4</mark></p><p id="7df7a02c-308f-43fb-8538-0848d30e0f1f" class=""><mark class="highlight-blue"><span style="border-bottom:0.05em solid">STEP 1 </span></mark>
+<mark class="highlight-blue"><span style="border-bottom:0.05em solid">STEP 2</span></mark>
+ANSWER ( Account_id , Post_id , Comment_id , Content , Answer_id )
+<mark class="highlight-blue"><span style="border-bottom:0.05em solid">STEP 3
+STEP 4</span></mark>
+ANSWER(__ , User_ssn)
+<mark class="highlight-blue"><span style="border-bottom:0.05em solid">STEP 5</span></mark></p><p id="19484b30-ab38-4a0b-b8ef-b96a4b5f20dd" class=""><mark class="highlight-blue"><span style="border-bottom:0.05em solid">STEP 6
+STEP 7</span></mark>
+<mark class="highlight-blue"><span style="border-bottom:0.05em solid">STEP 8
+STEP 9</span></mark></p><p id="19e31858-d80a-45b8-a38a-af72b27ad8b8" class="">LIKABLE_CONTENT( id )</p><p id="e7258483-fb39-416f-baac-7d04d0f10590" class="">ANSWER( __ , Likable_content_id )</p><p id="7d58a5ee-e2af-4a9b-b82e-a46193688802" class="">COMMENT ( __ , Likable_content_id )</p><p id="51017ebb-1242-47a1-bfe4-57c8b655a5f0" class="">POST ( __ , Likable_content_id )</p></div></article></body></html>
