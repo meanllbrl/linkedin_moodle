@@ -1,5 +1,4 @@
-
-<html><head><meta http-equiv="Content-Type" content="text/html; charset=utf-8"/><title>Untitled</title><style>
+<html><head><meta http-equiv="Content-Type" content="text/html; charset=utf-8"><title>Untitled</title><style>
 /* cspell:disable-file */
 /* webkit printing magic: print all background colors */
 html {
@@ -668,8 +667,8 @@ BEFORE INSE
                                 SELECT * 
                                 FROM CONNECT as A 
                                 WHERE CONCAT(A.User_ssn,A.Connected_ssn) = CONCAT(NEW.Connected_ssn,NEW.User_ssn))
-                            THEN SIGNAL SQLSTATE &#x27;45000&#x27;
-                                    SET MESSAGE_TEXT = &#x27;They are already connected&#x27;;
+                            THEN SIGNAL SQLSTATE '45000'
+                                    SET MESSAGE_TEXT = 'They are already connected';
                     END IF;                 
                 END;
 $$</code></pre><p id="ece9938b-7071-4ed6-afde-a1268e47f754" class="">
@@ -723,8 +722,8 @@ BEFORE INSERT
                         WHERE NEW.Assignment_id = ASG.Assignment_id 
                                         AND  ASG.Course_id = ENR.Course_id
                                                 AND NEW.Student_ssn = ENR.Student_ssn)
-                        THEN SIGNAL SQLSTATE &#x27;45000&#x27;
-                                    SET MESSAGE_TEXT = &#x27;No permission to the user. Not enrolled to the course!&#x27;;
+                        THEN SIGNAL SQLSTATE '45000'
+                                    SET MESSAGE_TEXT = 'No permission to the user. Not enrolled to the course!';
                     END IF;
                 END;
 $$</code></pre><p id="1268f041-fcd6-405f-940c-0184fd77df62" class="">
@@ -779,17 +778,17 @@ $$</code></pre><p id="2558f3bf-e764-4e43-a47c-f6a72ec4b1cc" class="">
 );</code></pre><p id="40ed9060-0993-47f3-b32b-827fa80dcffa" class="">
 </p><p id="71871713-5e72-45a1-b9fc-ab4b80696ffc" class="">The NOBADCOMMENT constraint is for disabling swear words to use.</p><pre id="bfae1fdb-3773-482b-bc70-642c1d67afdb" class="code"><code>CREATE TABLE COMMENT(
     **
-    Body VARCHAR(255) DEFAULT &quot;Comment_body&quot;,
-    CONSTRAINT NOBADCOMMENT CHECK(Body NOT LIKE &quot;%fuck%&quot;),
+    Body VARCHAR(255) DEFAULT "Comment_body",
+    CONSTRAINT NOBADCOMMENT CHECK(Body NOT LIKE "%fuck%"),
     **
 );</code></pre><p id="81ba46a6-4a40-482f-a4c7-1adc45a5b0cf" class="">
 </p><p id="fb8e3487-154f-447c-9043-3148b52fce43" class="">The BADCHARS constraint is for disabling unwanted chars to be used!</p><pre id="630033af-2936-4ee3-aa41-efafd09f5a99" class="code"><code>CREATE TABLE USER(
         ***
         name VARCHAR(100) NOT NULL,
-        CONSTRAINT BADCHARS CHECK(name LIKE &quot;%*%&quot; 
-																							OR name LIKE &quot;%-%&quot; 
-																										OR name LIKE &quot;%+%&quot; 
-																															OR name LIKE &quot;%~%&quot;)
+        CONSTRAINT BADCHARS CHECK(name LIKE "%*%" 
+																							OR name LIKE "%-%" 
+																										OR name LIKE "%+%" 
+																															OR name LIKE "%~%")
         *** 
     );</code></pre><p id="73074fa4-0ed0-45f4-b156-199e3a59b489" class="">
 </p><p id="52295cdf-842f-400a-8712-88d3ace41164" class="">The CONNECT_CONSTRAINT is for disabling repeated connections to occur.</p><pre id="1be3ff9b-e4f7-484b-a834-5e2294e621e5" class="code"><code>DELIMITER $$
@@ -802,22 +801,22 @@ BEFORE INSERT
                                 SELECT *
                                 FROM CONNECT as A
                                 WHERE CONCAT(A.User_ssn,A.Connected_ssn) = CONCAT(NEW.Connected_ssn,NEW.User_ssn))
-                            THEN SIGNAL SQLSTATE &#x27;45000&#x27;
-                                    SET MESSAGE_TEXT = &#x27;They are already connected&#x27;;
+                            THEN SIGNAL SQLSTATE '45000'
+                                    SET MESSAGE_TEXT = 'They are already connected';
                     END IF;
                 END;
 $$</code></pre><h3 id="ce42c223-643f-4139-b878-3534a43672a0" class="">SQL STATEMENTS</h3><ol type="1" id="aaed9f4e-46c4-4991-b29a-fa644976938e" class="numbered-list" start="1"><li>INSERTIONS-DELETIONS-UPDATES<ol type="a" id="5b135d27-573d-475d-b20a-15162b74e279" class="numbered-list" start="1"><li>INSERTIONS<ol type="i" id="cea94753-9992-4e84-bc77-98721b93519e" class="numbered-list" start="1"><li>TABLE USER<pre id="41543026-2d37-4157-8ace-84eac3576841" class="code"><code>INSERT INTO USER (Ssn,title,name,last_logged)
 VALUES
-  (500000010,&quot;Student&quot;,&quot;Nissim Deleon&quot;,&quot;2021-11-22&quot;),
-  (500000011,&quot;Data Scientist&quot;,&quot;Avram Golden&quot;,&quot;2021-11-22&quot;),
-  (500000012,&quot;Teacher&quot;,&quot;Nayda Rios&quot;,&quot;2021-11-22&quot;),
-  (500000013,&quot;Entrepreneur&quot;,&quot;Harding Wooten&quot;,&quot;2021-11-22&quot;),
-  (500000014,&quot;Member&quot;,&quot;Whoopi Lindsay&quot;,&quot;2021-11-22&quot;),
-  (500000015,&quot;Manager&quot;,&quot;Grant Poole&quot;,&quot;2021-11-22&quot;),
-  (500000016,&quot;Entrepreneur&quot;,&quot;Stuart Everett&quot;,&quot;2021-11-22&quot;),
-  (500000017,&quot;Doctor&quot;,&quot;Garrett Rowland&quot;,&quot;2021-11-22&quot;),
-  (500000018,&quot;Prof&quot;,&quot;Alfreda Reeves&quot;,&quot;2021-11-22&quot;),
-  (500000019,&quot;Entrepreneur&quot;,&quot;Meredith Cotton&quot;,&quot;2021-11-22&quot;);</code></pre></li></ol><p id="78af1cfa-73f1-416a-919f-4079f070cd5b" class="">  b. TABLE CONNECT<div class="indented"><pre id="6f55a631-f5fb-4ac6-b60a-6c7e8f1ab6d7" class="code"><code>INSERT INTO CONNECT (User_ssn,Connected_ssn)
+  (500000010,"Student","Nissim Deleon","2021-11-22"),
+  (500000011,"Data Scientist","Avram Golden","2021-11-22"),
+  (500000012,"Teacher","Nayda Rios","2021-11-22"),
+  (500000013,"Entrepreneur","Harding Wooten","2021-11-22"),
+  (500000014,"Member","Whoopi Lindsay","2021-11-22"),
+  (500000015,"Manager","Grant Poole","2021-11-22"),
+  (500000016,"Entrepreneur","Stuart Everett","2021-11-22"),
+  (500000017,"Doctor","Garrett Rowland","2021-11-22"),
+  (500000018,"Prof","Alfreda Reeves","2021-11-22"),
+  (500000019,"Entrepreneur","Meredith Cotton","2021-11-22");</code></pre></li></ol><p id="78af1cfa-73f1-416a-919f-4079f070cd5b" class="">  b. TABLE CONNECT</p><div class="indented"><pre id="6f55a631-f5fb-4ac6-b60a-6c7e8f1ab6d7" class="code"><code>INSERT INTO CONNECT (User_ssn,Connected_ssn)
 VALUES
   (500000010,500000011),
   (500000010,500000012),
@@ -828,24 +827,24 @@ VALUES
   (500000018,500000017),
   (500000005,500000018),
   (500000013,500000012),
-  (500000018,500000019);</code></pre></div></p><p id="c23c1487-d016-4a3d-9cd4-01a1303dd841" class="">  c. TABLE POST<div class="indented"><pre id="365a506f-73fe-4885-9472-fca3bfb0ed39" class="code"><code>INSERT INTO POST(Id,Account_id,Content,Likable_content_id )
+  (500000018,500000019);</code></pre></div><p></p><p id="c23c1487-d016-4a3d-9cd4-01a1303dd841" class="">  c. TABLE POST</p><div class="indented"><pre id="365a506f-73fe-4885-9472-fca3bfb0ed39" class="code"><code>INSERT INTO POST(Id,Account_id,Content,Likable_content_id )
 VALUES
-  (31,500000069,&quot;The system is all about memorization!&quot;,900000031),
-  (32,500000071,&quot;Engineering harder than anybody think&quot;,900000032),
-  (33,500000073,&quot;Harder you work luckier you get!&quot;,900000033),
-  (34,500000075,&quot;It&#x27;s all about consistency!&quot;,900000034),
-  (35,500000077,&quot;Life is too short.İf you don&#x27;t look around sometimes you could miss it.&quot;,900000035),
-  (37,500000081,&quot;With great power comes great responsibility&quot;,900000037);
-  </code></pre></div></p></li></ol><p id="44263161-cb0a-44d6-a03f-08f0381998d1" class="">
-</p><p id="6cf67f41-950e-4572-921a-2532d8384754" class="">b. DELETIONS<div class="indented"><ol type="a" id="e52be257-cc43-4ba4-bd1b-049c1e769186" class="numbered-list" start="1"><li>TABLE USER<pre id="f6483add-2199-49b0-b76b-781950ca4b3c" class="code"><code>DELETE FROM USER
+  (31,500000069,"The system is all about memorization!",900000031),
+  (32,500000071,"Engineering harder than anybody think",900000032),
+  (33,500000073,"Harder you work luckier you get!",900000033),
+  (34,500000075,"It's all about consistency!",900000034),
+  (35,500000077,"Life is too short.İf you don't look around sometimes you could miss it.",900000035),
+  (37,500000081,"With great power comes great responsibility",900000037);
+  </code></pre></div><p></p></li></ol><p id="44263161-cb0a-44d6-a03f-08f0381998d1" class="">
+</p><p id="6cf67f41-950e-4572-921a-2532d8384754" class="">b. DELETIONS</p><div class="indented"><ol type="a" id="e52be257-cc43-4ba4-bd1b-049c1e769186" class="numbered-list" start="1"><li>TABLE USER<pre id="f6483add-2199-49b0-b76b-781950ca4b3c" class="code"><code>DELETE FROM USER
 WHERE Ssn=500000010;</code></pre></li></ol><ol type="a" id="09bf42b3-3b93-4955-a2fc-b109e9c725a0" class="numbered-list" start="2"><li>TABLE CONNECT<pre id="22526368-1e4b-4684-8b03-53507343df7b" class="code"><code>DELETE FROM CONNECT
 WHERE  user_ssn = 500000010
        AND connected_ssn = 500000011;</code></pre></li></ol><ol type="a" id="2f935de6-9c15-46ca-9921-8be2c4f4648f" class="numbered-list" start="3"><li>TABLE POST<pre id="d9d44713-a54f-4055-920b-5a5ae59a80d3" class="code"><code>DELETE FROM POST
-WHERE Content LIKE &#x27;%fuck%&#x27;;</code></pre></li></ol><p id="63b08509-7e0f-42a0-aa4a-9e42ac7b8748" class="">
-</p></div></p><p id="f7c4ad9f-2b15-42cb-b883-ca01e7b4f164" class="">c. UPDATES<div class="indented"><ol type="a" id="bfad71f2-cebd-4127-8f39-77cea448dcad" class="numbered-list" start="1"><li>TABLE ASSIGNMENT_GRADE<pre id="2fb80993-9711-4302-a0c9-5c497b8974a1" class="code"><code>UPDATE ASSIGNMENT_GRADE
+WHERE Content LIKE '%fuck%';</code></pre></li></ol><p id="63b08509-7e0f-42a0-aa4a-9e42ac7b8748" class="">
+</p></div><p></p><p id="f7c4ad9f-2b15-42cb-b883-ca01e7b4f164" class="">c. UPDATES</p><div class="indented"><ol type="a" id="bfad71f2-cebd-4127-8f39-77cea448dcad" class="numbered-list" start="1"><li>TABLE ASSIGNMENT_GRADE<pre id="2fb80993-9711-4302-a0c9-5c497b8974a1" class="code"><code>UPDATE ASSIGNMENT_GRADE
 SET Grade = 90
 WHERE Student_ssn =500000086;</code></pre></li></ol><ol type="a" id="9e55ace5-f56c-4ef0-bf2e-4dc713c62ddc" class="numbered-list" start="2"><li>TABLE USER<pre id="a01ee9ea-d05d-47c8-8675-4f50d0e5f148" class="code"><code>UPDATE USER
-SET title=&quot;Prof&quot;
+SET title="Prof"
 WHERE Ssn=500000106;</code></pre></li></ol><ol type="a" id="4ced35d1-8c71-4d2b-b17e-b47c14922951" class="numbered-list" start="3"><li>TABLE ORGANIZATION<pre id="75a8433c-0f4a-4cca-a049-e1a1b76d58ba" class="code"><code>UPDATE ORGANIZATION
 SET Admin_ssn=500000009
 WHERE Id=600000007;</code></pre></li></ol><p id="0da9a059-121b-4468-ac09-001dc9dfc606" class="">
@@ -866,9 +865,9 @@ WHERE
 FROM 
   POST 
 WHERE 
-  Content LIKE &quot;%5_________%&quot; 
-  OR Content LIKE &quot;%5__ ___ __ __%&quot; 
-  OR Content LIKE &quot;%(5__) ___ __ __%&quot;;</code></pre><p id="f7510378-8619-46ef-aa50-6e2f7c24a0e6" class="">
+  Content LIKE "%5_________%" 
+  OR Content LIKE "%5__ ___ __ __%" 
+  OR Content LIKE "%(5__) ___ __ __%";</code></pre><p id="f7510378-8619-46ef-aa50-6e2f7c24a0e6" class="">
 </p><p id="58a8eee3-94df-413c-8953-896278833c68" class="">3.Data for comments with content longer than 25 characters...</p><pre id="502a31bc-c6db-44c4-99f5-3013b83631d1" class="code"><code>SELECT 
   Comment_id, 
   Account_id, 
@@ -899,7 +898,7 @@ FROM
   USER AS U 
 WHERE 
   C.Teacher_ssn = U.Ssn 
-  AND C.Cname = &quot;Calculus 1&quot;;</code></pre><p id="c9029775-404a-4e4d-8a04-cbdc5a18fa9d" class="">
+  AND C.Cname = "Calculus 1";</code></pre><p id="c9029775-404a-4e4d-8a04-cbdc5a18fa9d" class="">
 </p><p id="3c742c57-86b0-49a7-8542-9037b3a66b5b" class="">3.Data of most skilled 10 users in descending order</p><pre id="c633d0f4-26b6-4a62-8e0c-b31af354fb67" class="code"><code>SELECT title,
        name,
        last_logged,
@@ -924,7 +923,7 @@ WHERE
     (SELECT COUNT(*)
      FROM LIKES AS L
      WHERE L.Likable_content_id = C.Likable_content_id);</code></pre></li></ol><p id="10e267e6-1c1b-4160-bb29-6866cce4e1c0" class="">
-</p><p id="5ca80d92-55d3-411a-bd75-fc28be99263f" class="">c. Minimum Three Tables<div class="indented"><p id="d57e27a9-670f-4659-bc9f-23e0e1f7322e" class="">1.The data of the projects worked by the users whose grade point average is higher than 50 from the assignments they have uploaded...</p><pre id="763246d8-e16d-4990-a896-8d0b559d1708" class="code"><code>SELECT U.Ssn,
+</p><p id="5ca80d92-55d3-411a-bd75-fc28be99263f" class="">c. Minimum Three Tables</p><div class="indented"><p id="d57e27a9-670f-4659-bc9f-23e0e1f7322e" class="">1.The data of the projects worked by the users whose grade point average is higher than 50 from the assignments they have uploaded...</p><pre id="763246d8-e16d-4990-a896-8d0b559d1708" class="code"><code>SELECT U.Ssn,
        U.name,
        P.Pname,
        P.Start_date,
@@ -981,8 +980,8 @@ FROM MOST_ENROLLED_USERS AS M,
      USER
 WHERE M.Ssn = USER.Ssn
 ORDER BY total DESC
-LIMIT 5;</code></pre></div></p><p id="216c6ad9-54e8-4b13-bf39-6136aae2b8c8" class="">
-</p></div></p><p id="e8dff91d-4661-4ef7-a738-62453ae24b52" class="">3 THE 5 ORIGINAL STATEMENT</p><p id="05331376-c577-41f1-9d3a-66392acf3414" class=""><div class="indented"><p id="28956640-510c-43c3-b594-c33238027c52" class="">1.The number of talents of students who have not uploaded any assignment they are responsible for...</p><pre id="e08517a1-530e-4c68-98fa-aeac529f7482" class="code"><code>SELECT S.Ssn,
+LIMIT 5;</code></pre></div><p></p><p id="216c6ad9-54e8-4b13-bf39-6136aae2b8c8" class="">
+</p></div><p></p><p id="e8dff91d-4661-4ef7-a738-62453ae24b52" class="">3 THE 5 ORIGINAL STATEMENT</p><p id="05331376-c577-41f1-9d3a-66392acf3414" class=""></p><div class="indented"><p id="28956640-510c-43c3-b594-c33238027c52" class="">1.The number of talents of students who have not uploaded any assignment they are responsible for...</p><pre id="e08517a1-530e-4c68-98fa-aeac529f7482" class="code"><code>SELECT S.Ssn,
        COUNT(*) AS skill_c
 FROM STUDENT AS S,
      ASSIGNMENT AS A,
@@ -1018,7 +1017,7 @@ WHERE WOP.User_ssn = E.Student_ssn
           WHERE T.Ssn = UL.User_ssn
           GROUP BY T.Ssn
           HAVING COUNT(*)&gt;1) );</code></pre><p id="3ddf5ad9-784d-40ce-af11-027367e32d8c" class="">
-</p><p id="c1c35543-f3b0-4256-9d59-d71c31a7f232" class="">3.As a result of the evaluation of the teachers registered in the system based on Assignments, the data of the 5 teachers with the best evaluation...<div class="indented"><p id="2e771a97-c5de-4994-bf7c-6756afc08aab" class="">In evaluation:<div class="indented"><ul id="d7385041-3d11-4daf-8281-652d4a63dd13" class="bulleted-list"><li style="list-style-type:disc">The time which spend to teacher to evaluate submitted Assignment (Low Good)</li></ul><ul id="5d21dbb0-f59d-4541-96f9-bb5ca81bf462" class="bulleted-list"><li style="list-style-type:disc">Grade point averages of the students in the relevant course (High Good)</li></ul></div></p></div></p><pre id="08a2f1ca-38fe-4776-9646-3a94296853a0" class="code"><code>SELECT C.Teacher_ssn,
+</p><p id="c1c35543-f3b0-4256-9d59-d71c31a7f232" class="">3.As a result of the evaluation of the teachers registered in the system based on Assignments, the data of the 5 teachers with the best evaluation...</p><div class="indented"><p id="2e771a97-c5de-4994-bf7c-6756afc08aab" class="">In evaluation:</p><div class="indented"><ul id="d7385041-3d11-4daf-8281-652d4a63dd13" class="bulleted-list"><li style="list-style-type:disc">The time which spend to teacher to evaluate submitted Assignment (Low Good)</li></ul><ul id="5d21dbb0-f59d-4541-96f9-bb5ca81bf462" class="bulleted-list"><li style="list-style-type:disc">Grade point averages of the students in the relevant course (High Good)</li></ul></div><p></p></div><p></p><pre id="08a2f1ca-38fe-4776-9646-3a94296853a0" class="code"><code>SELECT C.Teacher_ssn,
        U.name AS Teacher_name,
        AVG(TIMESTAMPDIFF(HOUR, AU.Upload_date, AG.Grade_date)) AS avg_time,
        AVG(AG.Grade) AS t_avg_grade,
@@ -1073,4 +1072,4 @@ FROM AVG_GRADES AS AG,
      USER
 WHERE USER.Ssn = AG.Ssn
 ORDER BY AG.Avarage_grade DESC
-LIMIT 5;</code></pre></div></p></li></ol></div></article></body></html>
+LIMIT 5;</code></pre></div><p></p></li></ol></div></article></body></html>
