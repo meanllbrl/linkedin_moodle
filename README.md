@@ -329,9 +329,8 @@
                </p>
             </li>
          </ul>
-         <h3 id="cfc3d289-ac0c-4d78-be3e-5e6061a7995d" class="">3. Conceptual Design</h3>
-         ![Test-Page-5 drawio](https://user-images.githubusercontent.com/83311854/159000693-c90f4801-72f6-407e-b3ab-2539b5866662.png)
-
+         <h3 id="cfc3d289-ac0c-4d78-be3e-5e6061a7995d" class="">3. Conceptual Design</h3> 
+         ![EER DIAGRAM](https://user-images.githubusercontent.com/83311854/159000693-c90f4801-72f6-407e-b3ab-2539b5866662.png)
          <h3 id="aa977689-1d09-4b0c-b5a6-f1b3a988bb65" class="">4. Mapping</h3>
          <p id="5e6aeff1-8e59-483c-b211-23c61a8aa16c" class=""><mark class="highlight-red">ITERATION 1
             </mark>
